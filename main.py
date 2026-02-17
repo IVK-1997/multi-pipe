@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import requests
 from datetime import datetime
@@ -13,9 +14,20 @@ import os
 # -----------------------------
 app = FastAPI()
 
+# -----------------------------
+# CORS FIX (VERY IMPORTANT)
+# -----------------------------
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # -----------------------------
-# Root Route (IMPORTANT for grader)
+# Root Route
 # -----------------------------
 @app.get("/")
 def root():
@@ -23,7 +35,7 @@ def root():
 
 
 # -----------------------------
-# Database Setup (SQLite)
+# Database Setup
 # -----------------------------
 engine = create_engine("sqlite:///database.db")
 SessionLocal = sessionmaker(bind=engine)
@@ -54,7 +66,7 @@ class PipelineRequest(BaseModel):
 
 
 # -----------------------------
-# Hacker News API Functions
+# Hacker News API
 # -----------------------------
 def fetch_top_ids():
     url = "https://hacker-news.firebaseio.com/v0/topstories.json"
@@ -71,7 +83,7 @@ def fetch_story(story_id):
 
 
 # -----------------------------
-# Local Sentiment + Simple Summary
+# Sentiment + Summary
 # -----------------------------
 def analyze_text(text):
 
@@ -96,7 +108,7 @@ def analyze_text(text):
 
 
 # -----------------------------
-# Database Save Function
+# Save to Database
 # -----------------------------
 def save_to_db(title, content, analysis, sentiment, source):
 
@@ -117,7 +129,7 @@ def save_to_db(title, content, analysis, sentiment, source):
 
 
 # -----------------------------
-# Notification Function (Mock)
+# Notification (Mock)
 # -----------------------------
 def send_notification(email):
     print(f"Notification sent to {email}")
@@ -125,7 +137,7 @@ def send_notification(email):
 
 
 # -----------------------------
-# Main Pipeline Endpoint
+# Pipeline Endpoint
 # -----------------------------
 @app.post("/pipeline")
 def run_pipeline(request: PipelineRequest):
@@ -133,7 +145,6 @@ def run_pipeline(request: PipelineRequest):
     results = []
     errors = []
 
-    # Step 1: Fetch Top Stories
     try:
         ids = fetch_top_ids()[:3]
     except Exception as e:
@@ -141,10 +152,9 @@ def run_pipeline(request: PipelineRequest):
             "items": [],
             "notificationSent": False,
             "processedAt": datetime.utcnow().isoformat(),
-            "errors": [f"Failed fetching top stories: {str(e)}"]
+            "errors": [str(e)]
         }
 
-    # Step 2: Process Each Story
     for story_id in ids:
         try:
             story_data = fetch_story(story_id)
@@ -168,12 +178,11 @@ def run_pipeline(request: PipelineRequest):
             errors.append(f"Story {story_id} failed: {str(e)}")
             continue
 
-    # Step 3: Send Notification
     notification_sent = False
     try:
         notification_sent = send_notification(request.email)
     except Exception as e:
-        errors.append(f"Notification failed: {str(e)}")
+        errors.append(str(e))
 
     return {
         "items": results,
