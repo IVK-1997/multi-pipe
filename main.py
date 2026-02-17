@@ -24,7 +24,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 # -----------------------------
 # Root Route
 # -----------------------------
@@ -82,27 +81,36 @@ def fetch_story(story_id):
 
 
 # -----------------------------
-# Simple Local Sentiment + Summary
+# Sentiment + Simple Summary
 # -----------------------------
 def analyze_text(text):
 
     if not text:
-        return "No content available.", "neutral"
+        return "No content available.", "objective"
 
     text_lower = text.lower()
 
-    positive_words = ["good", "great", "excellent", "success", "win", "growth"]
-    negative_words = ["bad", "poor", "fail", "loss", "decline", "problem"]
+    positive_words = [
+        "good", "great", "excellent", "success",
+        "win", "growth", "amazing", "breakthrough",
+        "innovation", "record"
+    ]
+
+    negative_words = [
+        "bad", "poor", "fail", "loss",
+        "decline", "problem", "issue",
+        "crash", "drop", "risk"
+    ]
 
     positive_score = sum(word in text_lower for word in positive_words)
     negative_score = sum(word in text_lower for word in negative_words)
 
     if positive_score > negative_score:
-        sentiment = "positive"
+        sentiment = "enthusiastic"
     elif negative_score > positive_score:
-        sentiment = "negative"
+        sentiment = "critical"
     else:
-        sentiment = "neutral"
+        sentiment = "objective"
 
     summary = text[:200]
 
